@@ -1,0 +1,4 @@
+import { NextResponse } from 'next/server'; import { getDb, parseJson } from '@/lib/db'; import { getDbProduct } from '@/lib/db-products'; import { isAdmin } from '@/lib/auth';
+export const runtime='nodejs'; export const dynamic='force-dynamic';
+export async function GET(_r:Request,{params}:{params:Promise<{slug:string}>}){const {slug}=await params;const p=getDbProduct(slug);return p?NextResponse.json(p,{headers:{'Cache-Control':'no-store'}}):NextResponse.json({error:'Not found'},{status:404})}
+export async function DELETE(_r:Request,{params}:{params:Promise<{slug:string}>}){if(!(await isAdmin()))return NextResponse.json({error:'Unauthorized'},{status:401});const {slug}=await params;try{getDb().prepare('DELETE FROM products WHERE slug=?').run(slug);return NextResponse.json({ok:true})}catch(e){return NextResponse.json({error:'Product cannot be deleted while it is referenced by an order.'},{status:409})}}

@@ -1,0 +1,2 @@
+import fs from 'node:fs';import path from 'node:path';
+const root=process.cwd();const source=path.join(root,'data','kazim-nawrozi.db');if(!fs.existsSync(source)){console.error('Database not found:',source);process.exit(1)}const dir=path.join(root,'backups');fs.mkdirSync(dir,{recursive:true});const stamp=new Date().toISOString().replace(/[:.]/g,'-');const dest=path.join(dir,`kazim-nawrozi-${stamp}.db`);fs.copyFileSync(source,dest);console.log(`Backup created: ${dest}`);

@@ -1,0 +1,32 @@
+{
+  "name": "kazim-nawrozi",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "backup:db": "node scripts/backup-db.mjs"
+  },
+  "dependencies": {
+    "country-state-city": "^3.2.1",
+    "lucide-react": "latest",
+    "next": "latest",
+    "nodemailer": "^7.0.6",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest"
+  }
+}

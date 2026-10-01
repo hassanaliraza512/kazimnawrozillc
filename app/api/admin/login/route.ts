@@ -1,0 +1,3 @@
+import {NextResponse} from 'next/server';import {authenticateUser,ADMIN_COOKIE} from '@/lib/auth';
+export const runtime='nodejs';
+export async function POST(req:Request){const b=await req.json().catch(()=>({}));const username=String(b.username||b.email||'').trim();const password=String(b.password||'');const a=authenticateUser(username,password);if(!a)return NextResponse.json({error:'Invalid username or password.'},{status:401});const r=NextResponse.json({ok:true,session:a.session});r.cookies.set(ADMIN_COOKIE,a.token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:604800});return r}

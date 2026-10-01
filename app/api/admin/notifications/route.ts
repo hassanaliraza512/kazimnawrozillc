@@ -1,0 +1,3 @@
+import {NextResponse} from 'next/server';import {getDb} from '@/lib/db';import {requirePermission} from '@/lib/auth';
+export const runtime='nodejs';export const dynamic='force-dynamic';
+export async function GET(){if(!(await requirePermission('orders')))return NextResponse.json({error:'Forbidden'},{status:403});const db=getDb();return NextResponse.json({rows:db.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 200').all(),channels:{emailConfigured:Boolean(process.env.SMTP_HOST&&(process.env.SMTP_FROM||process.env.SMTP_USER)),whatsappConfigured:Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_WHATSAPP_FROM)}},{headers:{'Cache-Control':'no-store'}})}

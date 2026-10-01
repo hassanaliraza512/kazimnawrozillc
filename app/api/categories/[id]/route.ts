@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server'; import { getDb } from '@/lib/db'; import { requirePermission } from '@/lib/auth';
+export async function DELETE(_r:Request,{params}:{params:Promise<{id:string}>}){if(!(await requirePermission('categories')))return NextResponse.json({error:'Forbidden'},{status:403});try{getDb().prepare('DELETE FROM categories WHERE id=?').run(Number((await params).id));return NextResponse.json({ok:true})}catch{return NextResponse.json({error:'Category cannot be deleted while products use it.'},{status:409})}}
