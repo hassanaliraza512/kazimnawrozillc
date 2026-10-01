@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { Search, PackageCheck, Clock, Printer } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import SiteFooter from "@/components/SiteFooter";
@@ -26,7 +26,15 @@ const paymentLabels: Record<string, string> = {
   failed: "Failed",
   refunded: "Refunded",
 };
-export default function TrackOrder() {
+export default function TrackOrderPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen p-12 text-center text-[var(--muted)]">Loading order status…</main>}>
+      <TrackOrder />
+    </Suspense>
+  );
+}
+
+function TrackOrder() {
   const params = useSearchParams();
   const trackingToken = params.get("token") || "";
   const [order, setOrder] = useState<any>(null);

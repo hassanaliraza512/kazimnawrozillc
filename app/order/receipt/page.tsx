@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Printer } from "lucide-react";
@@ -15,7 +15,15 @@ const paymentLabels: Record<string, string> = {
   failed: "Failed",
   refunded: "Refunded",
 };
-export default function Receipt() {
+export default function ReceiptPage() {
+  return (
+    <Suspense fallback={<main className="p-12 text-center text-[var(--muted)]">Loading receipt…</main>}>
+      <Receipt />
+    </Suspense>
+  );
+}
+
+function Receipt() {
   const p = useSearchParams();
   const order = p.get("order") || "";
   const email = p.get("email") || "";

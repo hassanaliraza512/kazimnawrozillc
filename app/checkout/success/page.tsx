@@ -1,12 +1,20 @@
 "use client";
 import Link from "next/link";
 import { CheckCircle2, PackageCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 import BrandLogo from "@/components/BrandLogo";
 import SiteFooter from "@/components/SiteFooter";
 import { useSearchParams } from "next/navigation";
-export default function Success() {
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen p-12 text-center text-[var(--muted)]">Loading order confirmation…</main>}>
+      <Success />
+    </Suspense>
+  );
+}
+
+function Success() {
   const { clearCart } = useCart();
   const params = useSearchParams();
   const order = params.get("order_number") || "";
