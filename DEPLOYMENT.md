@@ -43,9 +43,9 @@ be served directly to the storefront and email clients. In Vercel, open the
 project's **Storage** section, create a **public Blob** store, and connect it to
 the project. Enable the store for Production and Preview; enable Development
 if you need uploads locally. Vercel adds `BLOB_READ_WRITE_TOKEN` to the
-connected environments. Redeploy after connecting the store. Image uploads go
-directly from the browser to Blob, avoiding Vercel's function request-size
-limit.
+connected environments. Redeploy after connecting the store. Images are sent
+to the authenticated app API and then saved to Blob server-side. Uploads are
+limited to 4 MB to stay within Vercel's function request-size limit.
 
 Previously uploaded files in `public/uploads` are not copied into Blob. Reupload
 existing custom logos or product images from the admin after setup, or replace

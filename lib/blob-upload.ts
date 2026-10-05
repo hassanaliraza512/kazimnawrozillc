@@ -1,13 +1,11 @@
-import {
-  handleUpload,
-  type HandleUploadBody,
-} from "@vercel/blob/client";
+import { put } from "@vercel/blob";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { Permission } from "@/lib/auth";
 import { requirePermission } from "@/lib/auth";
 
 const allowedContentTypes = ["image/jpeg", "image/png", "image/webp"];
-const maximumSizeInBytes = 8 * 1024 * 1024;
+const maximumSizeInBytes = 4 * 1024 * 1024;
 
 export async function handleAuthorizedImageUpload(
   request: Request,
@@ -26,58 +24,64 @@ export async function handleAuthorizedImageUpload(
     );
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return NextResponse.json(
-      {
-        error:
-          "Image storage is not configured. Connect a public Vercel Blob store to this project and redeploy.",
-      },
-      { status: 503 },
-    );
-  }
-
-  let body: HandleUploadBody;
+  let file: FormDataEntryValue | null;
   try {
-    body = (await request.json()) as HandleUploadBody;
+    file = (await request.formData()).get("file");
   } catch {
     return NextResponse.json(
-      { error: "Invalid upload request. Please retry the image upload." },
+      { error: "Invalid image upload. Please select the image and retry." },
       { status: 400 },
     );
   }
 
+  if (!(file instanceof File)) {
+    return NextResponse.json(
+      { error: "Choose an image file to upload." },
+      { status: 400 },
+    );
+  }
+  if (!allowedContentTypes.includes(file.type)) {
+    return NextResponse.json(
+      { error: "Only JPG, PNG, and WebP images are allowed." },
+      { status: 400 },
+    );
+  }
+  if (file.size > maximumSizeInBytes) {
+    return NextResponse.json(
+      { error: "Images must be 4 MB or smaller. Please resize and retry." },
+      { status: 413 },
+    );
+  }
+
+  const extension =
+    file.type === "image/jpeg"
+      ? "jpg"
+      : file.type === "image/png"
+        ? "png"
+        : "webp";
+
   try {
-    const result = await handleUpload({
-      request,
-      body,
-      onBeforeGenerateToken: async (pathname) => {
-        const allowedPath = new RegExp(
-          `^${folder}/[0-9a-f-]{36}\\.(jpg|png|webp)$`,
-          "i",
-        );
-        if (!allowedPath.test(pathname)) {
-          throw new Error("Invalid image upload path.");
-        }
-
-        return {
-          allowedContentTypes,
-          maximumSizeInBytes,
-          addRandomSuffix: true,
-        };
+    const blob = await put(
+      `${folder}/${randomUUID()}.${extension}`,
+      file,
+      {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: file.type,
       },
-    });
+    );
 
-    return NextResponse.json(result);
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
     console.error(`${folder.toUpperCase()} IMAGE UPLOAD ERROR:`, error);
     return NextResponse.json(
       {
         error:
           error instanceof Error
-            ? error.message
-            : "Image upload could not be started. Please try again.",
+            ? `Image storage rejected the upload: ${error.message}`
+            : "Image could not be saved. Check the Blob store configuration and retry.",
       },
-      { status: 400 },
+      { status: 502 },
     );
   }
 }

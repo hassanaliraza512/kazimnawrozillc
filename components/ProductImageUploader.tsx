@@ -1,23 +1,10 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import { useRef, useState } from "react";
 import { Loader2, Upload, X } from "lucide-react";
+import { uploadImage } from "@/lib/upload-image";
 
-const maximumSizeInBytes = 8 * 1024 * 1024;
-
-function extensionFor(file: File) {
-  switch (file.type) {
-    case "image/jpeg":
-      return "jpg";
-    case "image/png":
-      return "png";
-    case "image/webp":
-      return "webp";
-    default:
-      throw new Error("Only JPG, PNG, and WebP images are allowed.");
-  }
-}
+const maximumSizeInBytes = 4 * 1024 * 1024;
 
 export default function ProductImageUploader({
   images,
@@ -42,21 +29,13 @@ export default function ProductImageUploader({
     try {
       for (const file of Array.from(files)) {
         if (file.size > maximumSizeInBytes) {
-          throw new Error(`${file.name} is larger than the 8 MB image limit.`);
+          throw new Error(`${file.name} is larger than the 4 MB image limit.`);
+        }
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          throw new Error("Only JPG, PNG, and WebP images are allowed.");
         }
 
-        const extension = extensionFor(file);
-        const blob = await upload(
-          `products/${crypto.randomUUID()}.${extension}`,
-          file,
-          {
-            access: "public",
-            contentType: file.type,
-            handleUploadUrl: "/api/admin/upload",
-            multipart: file.size > 4.5 * 1024 * 1024,
-          },
-        );
-        uploaded.push(blob.url);
+        uploaded.push(await uploadImage(file, "/api/admin/upload"));
         onChange([...images, ...uploaded]);
       }
     } catch (error) {
@@ -95,7 +74,7 @@ export default function ProductImageUploader({
         {busy ? "Uploading…" : "Upload from device"}
       </button>
       <p className="text-xs text-[var(--muted)]">
-        Images are stored in Vercel Blob. JPG, PNG or WebP · 8 MB max each.
+        Images are stored in Vercel Blob. JPG, PNG or WebP · 4 MB max each.
       </p>
       {message && <p className="text-sm text-red-700">{message}</p>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
