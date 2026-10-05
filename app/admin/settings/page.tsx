@@ -43,9 +43,8 @@ export default function Settings() {
         <strong>Architecture:</strong> Products, categories, orders and order
         items are stored in persistent PostgreSQL. Payments are{" "}
         <strong>Cash on Delivery</strong>; Stripe and PayPal are disabled.
-        Product images uploaded from the admin panel are stored in{" "}
-        <code>public/uploads/products</code>; use persistent object storage for
-        production uploads on Vercel.
+        Product and homepage images are stored in Vercel Blob. Connect a public
+        Blob store in the Vercel project settings to enable image uploads.
       </div>
     </AdminShell>
   );

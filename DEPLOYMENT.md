@@ -15,6 +15,7 @@ copy `.env.example` to `.env.local` and set:
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET` (use a long random value)
 - `NEXT_PUBLIC_SITE_URL`
+- `BLOB_READ_WRITE_TOKEN` (automatically added when you connect a Blob store)
 - SMTP variables if email notifications are required
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_WHATSAPP_FROM` if WhatsApp notifications are required
 
@@ -35,8 +36,22 @@ Use a database backup and run the migration only against the intended
 destination. Then add the pooled `DATABASE_URL` to Vercel's Production and
 Preview environments.
 
-Product images uploaded under `public/uploads` are files and are not copied by
-the database migration; use persistent/object storage for production uploads.
+## Image storage
+Product, homepage, and logo uploads use Vercel Blob so images persist and can
+be served directly to the storefront and email clients. In Vercel, open the
+project's **Storage** section, create a **public Blob** store, and connect it to
+the project. Enable the store for Production and Preview; enable Development
+if you need uploads locally. Vercel adds `BLOB_READ_WRITE_TOKEN` to the
+connected environments. Redeploy after connecting the store. Image uploads go
+directly from the browser to Blob, avoiding Vercel's function request-size
+limit.
+
+Previously uploaded files in `public/uploads` are not copied into Blob. Reupload
+existing custom logos or product images from the admin after setup, or replace
+their URLs with public HTTPS image URLs.
+
+Set `NEXT_PUBLIC_SITE_URL` to the public HTTPS domain you want emails to use.
+If unset, email links use Vercel's configured production URL or deployment URL.
 
 ## Health check
 After deployment, `/api/health` should return JSON with `ok: true` and

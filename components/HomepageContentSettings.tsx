@@ -1,5 +1,6 @@
 "use client";
 
+import { upload } from "@vercel/blob/client";
 import { useEffect, useRef, useState } from "react";
 import { Check, LoaderCircle, Save, Upload } from "lucide-react";
 
@@ -81,12 +82,29 @@ export default function HomepageContentSettings() {
     setError("");
     setMessage("");
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch("/api/admin/site-upload", { method: "POST", body: formData });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Image upload failed.");
-      updateField(field, data.url);
+      if (file.size > 8 * 1024 * 1024) {
+        throw new Error("Image must be 8 MB or smaller.");
+      }
+      const extensions: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+      };
+      const extension = extensions[file.type];
+      if (!extension) {
+        throw new Error("Only JPG, PNG, and WebP images are allowed.");
+      }
+      const blob = await upload(
+        `site/${crypto.randomUUID()}.${extension}`,
+        file,
+        {
+          access: "public",
+          contentType: file.type,
+          handleUploadUrl: "/api/admin/site-upload",
+          multipart: file.size > 4.5 * 1024 * 1024,
+        },
+      );
+      updateField(field, blob.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Image upload failed.");
     } finally {

@@ -1,6 +1,7 @@
 import { query } from "@/lib/postgres";
 import { getHomepageContent } from "@/lib/site-content";
 import { getStoreEmailSender } from "@/lib/email";
+import { getPublicAssetUrl, getPublicSiteUrl } from "@/lib/public-url";
 
 export type NotificationKind =
   "order_confirmation" | "status_update" | "admin_alert";
@@ -200,8 +201,8 @@ export async function confirmationEmail(order: any) {
   const isPickup = order.delivery_method === "local-pickup";
   const hasAdminTerms = isPickup || order.advance_percent !== null && order.advance_percent !== undefined;
   const siteContent = await getHomepageContent();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
-  const logoUrl = new URL(siteContent.brandLogo, `${siteUrl}/`).toString();
+  const siteUrl = getPublicSiteUrl();
+  const logoUrl = getPublicAssetUrl(siteContent.brandLogo);
   const items = await query<{
     product_slug: string;
     product_name: string;
@@ -273,8 +274,8 @@ export async function statusEmail(order: any, status: string) {
   const brandName = escapeHtml(content.brandName);
   const advancePercent = order.advance_percent == null ? null : Number(order.advance_percent);
   const advance = Number(order.delivery_fee || 0);
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
-  const logoUrl = new URL(content.brandLogo, `${siteUrl}/`).toString();
+  const siteUrl = getPublicSiteUrl();
+  const logoUrl = getPublicAssetUrl(content.brandLogo);
   const trackUrl = new URL(`/track-order?order=${encodeURIComponent(order.order_number)}&token=${encodeURIComponent(order.tracking_token || "")}`, `${siteUrl}/`).toString();
   const paymentInstructions = isPickup
     ? "The product total is due at pickup."

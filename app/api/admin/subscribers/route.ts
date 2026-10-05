@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth";
 import { execute, query, queryOne } from "@/lib/postgres";
 import { getHomepageContent } from "@/lib/site-content";
 import { getStoreEmailSender } from "@/lib/email";
+import { getPublicAssetUrl } from "@/lib/public-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,8 +98,7 @@ export async function POST(request: Request) {
       const content = await getHomepageContent();
       const brandName = content.brandName.replace(/[\r\n]+/g, " ").trim();
       const safeBrandName = escapeHtml(brandName);
-      const publicUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-      const logoUrl = new URL(content.brandLogo, publicUrl).toString();
+      const logoUrl = getPublicAssetUrl(content.brandLogo);
       const contactLines = [
         content.brandContactEmail ? `Email: ${content.brandContactEmail}` : "",
         content.brandContactPhone ? `Phone: ${content.brandContactPhone}` : "",
