@@ -9,7 +9,8 @@
 ## Environment
 Set these in Vercel Project Settings → Environment Variables. For local work,
 copy `.env.example` to `.env.local` and set:
-- `DATABASE_URL` (pooled Neon/PostgreSQL connection string)
+- `DATABASE_URL` (pooled Neon/PostgreSQL connection string; required at runtime
+  in every Vercel environment you deploy)
 - `ADMIN_EMAIL`
 - `ADMIN_USERNAME` (optional owner-account login name; defaults to `ADMIN_EMAIL`)
 - `ADMIN_PASSWORD`
@@ -90,4 +91,6 @@ The checkout confirmation also provides a private tracking link.
 The application requires a reachable PostgreSQL database and uses it for
 product, order, customer, admin, notification, and site settings data. Keep
 `DATABASE_URL` configured for Production and Preview deployments, and schedule
-Neon backups.
+Neon backups. The connection pool is initialized when a request first uses the
+database, so builds can complete without connecting to production data; a
+deployment without a database URL will still fail database-backed requests.

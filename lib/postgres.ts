@@ -31,14 +31,15 @@ function createPool() {
   });
 }
 
-export const postgresPool =
-  (globalForPostgres.postgresPool ??= createPool());
+function getPostgresPool() {
+  return (globalForPostgres.postgresPool ??= createPool());
+}
 
 export async function query<T = Record<string, unknown>>(
   text: string,
   values: unknown[] = [],
 ): Promise<T[]> {
-  const result = await postgresPool.query(text, values);
+  const result = await getPostgresPool().query(text, values);
   return result.rows as T[];
 }
 
@@ -54,13 +55,13 @@ export async function execute(
   text: string,
   values: unknown[] = [],
 ) {
-  return postgresPool.query(text, values);
+  return getPostgresPool().query(text, values);
 }
 
 export async function withTransaction<T>(
   callback: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
-  const client = await postgresPool.connect();
+  const client = await getPostgresPool().connect();
 
   try {
     await client.query("BEGIN");
