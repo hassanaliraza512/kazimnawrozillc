@@ -65,7 +65,7 @@ export async function handleAuthorizedImageUpload(
       `${folder}/${randomUUID()}.${extension}`,
       file,
       {
-        access: "public",
+        access: "private",
         addRandomSuffix: true,
         contentType: file.type,
       },
