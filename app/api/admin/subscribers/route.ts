@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { execute, query, queryOne } from "@/lib/postgres";
 import { getHomepageContent } from "@/lib/site-content";
 import { getStoreEmailSender } from "@/lib/email";
 
@@ -22,10 +22,9 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const db = getDb();
-  const rows = db
-    .prepare("SELECT * FROM mailing_list_subscribers ORDER BY created_at DESC LIMIT 500")
-    .all();
+  const rows = await query(
+    "SELECT * FROM mailing_list_subscribers ORDER BY created_at DESC LIMIT 500",
+  );
   return NextResponse.json(
     {
       rows,
@@ -58,10 +57,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getDb();
-    const subscriber = db
-      .prepare("SELECT id,email,status FROM mailing_list_subscribers WHERE id=?")
-      .get(id) as { id: number; email: string; status: string } | undefined;
+    const subscriber = await queryOne<{
+      id: number;
+      email: string;
+      status: string;
+    }>(
+      "SELECT id,email,status FROM mailing_list_subscribers WHERE id=$1",
+      [id],
+    );
     if (!subscriber) {
       return NextResponse.json({ error: "Subscriber not found." }, { status: 404 });
     }
@@ -72,10 +75,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This subscriber is already being processed." }, { status: 409 });
     }
 
-    const claimed = db
-      .prepare("UPDATE mailing_list_subscribers SET status='sending',delivery_error='' WHERE id=? AND status='pending'")
-      .run(id);
-    if (Number(claimed.changes) !== 1) {
+    const claimed = await queryOne<{ id: number }>(
+      `UPDATE mailing_list_subscribers
+       SET status='sending',delivery_error=''
+       WHERE id=$1 AND status='pending'
+       RETURNING id`,
+      [id],
+    );
+    if (!claimed) {
       return NextResponse.json({ error: "This subscriber is already being processed." }, { status: 409 });
     }
 
@@ -87,7 +94,7 @@ export async function POST(request: Request) {
         secure: process.env.SMTP_SECURE === "true",
         auth: user && password ? { user, pass: password } : undefined,
       });
-      const content = getHomepageContent();
+      const content = await getHomepageContent();
       const brandName = content.brandName.replace(/[\r\n]+/g, " ").trim();
       const safeBrandName = escapeHtml(brandName);
       const publicUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
@@ -118,15 +125,17 @@ export async function POST(request: Request) {
       });
 
       const sentAt = new Date().toISOString();
-      db.prepare(
-        "UPDATE mailing_list_subscribers SET status='approved',approved_at=?,email_sent_at=?,delivery_error='' WHERE id=?",
-      ).run(sentAt, sentAt, id);
+      await execute(
+        "UPDATE mailing_list_subscribers SET status='approved',approved_at=$1,email_sent_at=$1,delivery_error='' WHERE id=$2",
+        [sentAt, id],
+      );
       return NextResponse.json({ ok: true });
     } catch (deliveryError) {
       const error = deliveryError instanceof Error ? deliveryError.message : "Email delivery failed.";
-      db.prepare(
-        "UPDATE mailing_list_subscribers SET status='pending',delivery_error=? WHERE id=?",
-      ).run(error.slice(0, 500), id);
+      await execute(
+        "UPDATE mailing_list_subscribers SET status='pending',delivery_error=$1 WHERE id=$2",
+        [error.slice(0, 500), id],
+      );
       return NextResponse.json({ error: `Email could not be sent: ${error}` }, { status: 502 });
     }
   } catch {

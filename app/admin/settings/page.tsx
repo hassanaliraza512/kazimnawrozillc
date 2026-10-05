@@ -8,7 +8,7 @@ export default function Settings() {
       </p>
       <h1 className="mt-2 text-4xl">Settings</h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
-        Local database, payment and policy settings for Kazim Nawrozi LLC.
+        Store, payment and policy settings for Kazim Nawrozi LLC.
       </p>
       <HomepageContentSettings />
       <div className="mt-8 grid gap-5 md:grid-cols-2">
@@ -41,11 +41,11 @@ export default function Settings() {
       </div>
       <div className="mt-5 border border-[var(--line)] bg-[var(--ivory)] p-6 text-sm leading-7">
         <strong>Architecture:</strong> Products, categories, orders and order
-        items are stored in a local SQLite database at{" "}
-        <code>data/kazim-nawrozi.db</code>. Payments are{" "}
+        items are stored in persistent PostgreSQL. Payments are{" "}
         <strong>Cash on Delivery</strong>; Stripe and PayPal are disabled.
-        Product images uploaded from the admin panel are stored locally in{" "}
-        <code>public/uploads/products</code>.
+        Product images uploaded from the admin panel are stored in{" "}
+        <code>public/uploads/products</code>; use persistent object storage for
+        production uploads on Vercel.
       </div>
     </AdminShell>
   );

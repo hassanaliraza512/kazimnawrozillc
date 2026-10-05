@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  return NextResponse.json(getHomepageContent(), {
+  return NextResponse.json(await getHomepageContent(), {
     headers: { "Cache-Control": "no-store" },
   });
 }
@@ -70,7 +70,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    return NextResponse.json(saveHomepageContent(content));
+    return NextResponse.json(await saveHomepageContent(content));
   } catch {
     return NextResponse.json(
       { error: "Homepage settings could not be saved." },

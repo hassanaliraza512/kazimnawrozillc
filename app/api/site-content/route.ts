@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const content = getHomepageContent();
+  const content = await getHomepageContent();
   return NextResponse.json(
     {
       brandLogo: content.brandLogo || defaultHomepageContent.brandLogo,

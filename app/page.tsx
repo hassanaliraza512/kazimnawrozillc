@@ -35,7 +35,7 @@ export default async function Home() {
     products = await getDbProducts();
   } catch {}
   try {
-    homepageContent = getHomepageContent();
+    homepageContent = await getHomepageContent();
   } catch {}
   const featured = products.filter((p) => p.featured);
   const selected = featured.length ? featured : products;

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { execute, queryOne } from "@/lib/postgres";
 import { getHomepageContent } from "@/lib/site-content";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!getHomepageContent().subscribeEnabled) {
+    if (!(await getHomepageContent()).subscribeEnabled) {
       return NextResponse.json({ error: "Subscriptions are currently closed." }, { status: 403 });
     }
 
@@ -16,17 +16,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
     }
 
-    const db = getDb();
-    db
-      .prepare(
-        `INSERT INTO mailing_list_subscribers(email,created_at,updated_at) VALUES(?,?,?)
-         ON CONFLICT(email) DO UPDATE SET updated_at=excluded.updated_at,delivery_error=''`,
-      )
-      .run(email, new Date().toISOString(), new Date().toISOString());
-
-    const subscriber = db
-      .prepare("SELECT status FROM mailing_list_subscribers WHERE email=?")
-      .get(email) as { status: string };
+    const now = new Date().toISOString();
+    await execute(
+      `INSERT INTO mailing_list_subscribers(email,created_at,updated_at)
+       VALUES($1,$2,$2)
+       ON CONFLICT(email)
+       DO UPDATE SET updated_at=EXCLUDED.updated_at,delivery_error=''`,
+      [email, now],
+    );
+    const subscriber = await queryOne<{ status: string }>(
+      "SELECT status FROM mailing_list_subscribers WHERE email=$1",
+      [email],
+    );
+    if (!subscriber) {
+      throw new Error("Subscriber record was not persisted.");
+    }
 
     return NextResponse.json({ ok: true, status: subscriber.status });
   } catch {

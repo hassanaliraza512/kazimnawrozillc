@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { query } from "@/lib/postgres";
 import { getHomepageContent } from "@/lib/site-content";
 import { getStoreEmailSender } from "@/lib/email";
 
@@ -19,7 +19,7 @@ export function statusLabel(s: string) {
   return s.replaceAll("_", " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-function recordNotification(args: {
+async function recordNotification(args: {
   orderId: number;
   orderNumber: string;
   kind: NotificationKind;
@@ -29,11 +29,20 @@ function recordNotification(args: {
   sent: number;
   error: string;
 }) {
-  getDb()
-    .prepare(
-      `INSERT INTO notifications(order_id,order_number,kind,recipient,subject,provider,sent,error,created_at) VALUES(?,?,?,?,?,?,?,?,?)`,
+  await query(
+    `INSERT INTO notifications (
+      order_id,
+      order_number,
+      kind,
+      recipient,
+      subject,
+      provider,
+      sent,
+      error,
+      created_at
     )
-    .run(
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [
       args.orderId,
       args.orderNumber,
       args.kind,
@@ -43,9 +52,9 @@ function recordNotification(args: {
       args.sent,
       args.error,
       new Date().toISOString(),
-    );
+    ],
+  );
 }
-
 export async function sendEmailNotification(args: {
   orderId: number;
   orderNumber: string;
@@ -74,7 +83,7 @@ export async function sendEmailNotification(args: {
         auth: user && pass ? { user, pass } : undefined,
       });
       await transporter.sendMail({
-        from: getStoreEmailSender(getHomepageContent().brandName, from),
+        from: getStoreEmailSender((await getHomepageContent()).brandName, from),
         to: args.to,
         subject: args.subject,
         html: args.html,
@@ -88,7 +97,7 @@ export async function sendEmailNotification(args: {
   } catch (e) {
     error = e instanceof Error ? e.message : "Email delivery failed.";
   }
-  recordNotification({
+  await recordNotification({
     orderId: args.orderId,
     orderNumber: args.orderNumber,
     kind: args.kind,
@@ -172,7 +181,7 @@ export async function sendWhatsAppNotification(args: {
     error = e instanceof Error ? e.message : "WhatsApp delivery failed.";
   }
 
-  recordNotification({
+  await recordNotification({
     orderId: args.orderId,
     orderNumber: args.orderNumber,
     kind: args.kind,
@@ -185,27 +194,36 @@ export async function sendWhatsAppNotification(args: {
   return { sent, error, provider };
 }
 
-export function confirmationEmail(order: any) {
+export async function confirmationEmail(order: any) {
   const advance = Number(order.delivery_fee || 0);
   const balanceDue = Math.max(0, Number(order.subtotal) - advance);
   const isPickup = order.delivery_method === "local-pickup";
   const hasAdminTerms = isPickup || order.advance_percent !== null && order.advance_percent !== undefined;
-  const siteContent = getHomepageContent();
+  const siteContent = await getHomepageContent();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
   const logoUrl = new URL(siteContent.brandLogo, `${siteUrl}/`).toString();
-  const items = getDb()
-    .prepare(
-      "SELECT product_slug,product_name,unit_price,quantity,line_total,advance_amount,delivery_time FROM order_items WHERE order_id=? ORDER BY id",
-    )
-    .all(order.id) as {
-      product_slug: string;
-      product_name: string;
-      unit_price: number;
-      quantity: number;
-      line_total: number;
-      advance_amount: number;
-      delivery_time: string;
-    }[];
+  const items = await query<{
+    product_slug: string;
+    product_name: string;
+    unit_price: number;
+    quantity: number;
+    line_total: number;
+    advance_amount: number;
+    delivery_time: string;
+  }>(
+    `SELECT
+      product_slug,
+      product_name,
+      unit_price,
+      quantity,
+      line_total,
+      advance_amount,
+      delivery_time
+    FROM order_items
+    WHERE order_id = $1
+    ORDER BY id`,
+    [Number(order.id)],
+  );
   const itemRows = items.map((item) => {
     const productUrl = new URL(`/products/${encodeURIComponent(item.product_slug)}`, `${siteUrl}/`).toString();
     return `<tr><td style="padding:12px 8px;border-bottom:1px solid #e6dfd2"><a href="${escapeHtml(productUrl)}" style="color:#211f1b;font-weight:600">${escapeHtml(item.product_name)}</a><br/><span style="color:#716b61;font-size:13px">Qty ${item.quantity} · $${Number(item.unit_price).toLocaleString()} each</span></td><td style="padding:12px 8px;border-bottom:1px solid #e6dfd2;text-align:right;white-space:nowrap">$${Number(item.line_total).toLocaleString()}</td></tr>`;
@@ -249,9 +267,9 @@ export function confirmationEmail(order: any) {
   return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:680px;margin:0 auto;padding:24px;color:#25231f;line-height:1.6"><div style="text-align:center;padding:8px 0 20px"><img src="${escapeHtml(logoUrl)}" alt="${safeBrandName}" width="160" style="display:inline-block;width:160px;max-height:120px;object-fit:contain"/><p style="margin:10px 0 0;letter-spacing:2px;color:#9a5a42">${safeBrandName}</p></div><h2 style="font-family:Georgia,serif">Order ${escapeHtml(order.order_number)} received</h2><p>Dear ${escapeHtml(order.customer_name)}, thank you for choosing ${safeBrandName}. We have received your order and it is awaiting review.</p><h3 style="margin:24px 0 8px">Your items</h3><table role="presentation" style="width:100%;border-collapse:collapse"><tbody>${itemRows}</tbody></table><div style="margin-top:16px;background:#f7f1e7;padding:18px"><strong>Product total: $${Number(order.subtotal).toLocaleString()}</strong><br/>Payment terms: ${paymentLabel}<br/>Balance due: ${balanceLabel}<br/>Delivery estimate: ${estimateLabel}<br/>Delivery method: ${escapeHtml(statusLabel(order.delivery_method))}</div>${bankTransferInfo}${!isPickup && !hasAdminTerms ? `<p>Our team will email your payment method, any required advance, bank details, and delivery estimate after reviewing your order. Please wait for those instructions before sending payment.</p>` : ""}<p style="margin:24px 0"><a href="${escapeHtml(trackUrl)}" style="display:inline-block;background:#211f1b;color:#fff;text-decoration:none;padding:12px 18px">Track your order</a></p><p>With thanks,<br/><strong>The ${safeBrandName} Team</strong></p>${contactRows ? `<hr style="border:0;border-top:1px solid #e6dfd2;margin:24px 0"/><p style="margin:0 0 8px"><strong>Questions? Contact us:</strong></p><table role="presentation" style="font-size:13px;color:#716b61">${contactRows}</table>` : ""}</div>`;
 }
 
-export function statusEmail(order: any, status: string) {
+export async function statusEmail(order: any, status: string) {
   const isPickup = order.delivery_method === "local-pickup";
-  const content = getHomepageContent();
+  const content = await getHomepageContent();
   const brandName = escapeHtml(content.brandName);
   const advancePercent = order.advance_percent == null ? null : Number(order.advance_percent);
   const advance = Number(order.delivery_fee || 0);

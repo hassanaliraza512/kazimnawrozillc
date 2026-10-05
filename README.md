@@ -1,6 +1,22 @@
-# Kazim Nawrozi LLC — Local DB + COD + Admin User Management
+# Kazim Nawrozi LLC — PostgreSQL + COD + Admin User Management
 
-This version uses local SQLite (`data/kazim-nawrozi.db`) and Cash on Delivery. It does not require Supabase or Stripe.
+The application uses PostgreSQL (Neon) for persistent data and Cash on
+Delivery. Set `DATABASE_URL` in `.env.local` for local development and in
+Vercel's environment settings for deployed environments.
+
+## Existing SQLite data migration
+
+Back up the existing database and migrate it to the intended PostgreSQL
+database before deploying:
+
+```powershell
+npm run backup:db
+npm run migrate:neon
+```
+
+Set `DATABASE_URL` or `DATABASE_URL_UNPOOLED` in `.env.local` first. The
+migration verifies row counts and exits unsuccessfully if the source and
+destination differ. See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment steps.
 
 ## Admin Users / RBAC
 
@@ -14,7 +30,7 @@ The Admin Users module supports:
 - Disable / enable staff accounts
 - Last login timestamp
 - Created date
-- Local SQLite activity/audit log
+- PostgreSQL activity/audit log
 - Server-side permission checks
 - Staff cannot grant themselves the `users` permission
 
@@ -49,7 +65,7 @@ Keep `.env.local` private.
 
 - Customer order tracking at `/track-order` using order number + checkout email
 - Private tracking link on the order confirmation page
-- Order status history stored in SQLite
+- Order status history stored in PostgreSQL
 - Customer receipt page at `/order/receipt`
 - Printable customer receipt/invoice workflow
 - Optional SMTP email confirmation when an order is placed
@@ -57,7 +73,7 @@ Keep `.env.local` private.
 - Optional opt-in Twilio WhatsApp confirmations and status updates
 - Notification log in Admin → Notifications
 - `/api/health` deployment health check
-- `npm run backup:db` SQLite backup command
+- `npm run backup:db` SQLite backup command for the migration source
 - `DEPLOYMENT.md` production checklist
 - Robust inventory handling when cancelled/returned orders are reactivated
 
