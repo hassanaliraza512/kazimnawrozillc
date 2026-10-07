@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
 import AdminShell from "@/components/AdminShell";
+import { AdminListControls, useAdminList } from "@/components/AdminListControls";
 
 type TrashedOrder = {
   id: number;
@@ -21,6 +22,11 @@ export default function OrderTrash() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const list = useAdminList(
+    orders,
+    (order) =>
+      `${order.order_number} ${order.customer_name} ${order.customer_email} ${order.order_status} ${order.created_at} ${order.deleted_at}`,
+  );
 
   async function load() {
     setLoading(true);
@@ -77,7 +83,19 @@ export default function OrderTrash() {
           <h2 className="mt-3 font-serif text-2xl">Trash is empty</h2>
         </div>
       ) : (
-        <div className="mt-7 overflow-x-auto border border-[var(--line)]">
+        <>
+        <div className="mt-7">
+          <AdminListControls
+            search={list.search}
+            onSearchChange={list.setSearch}
+            totalCount={list.filteredItems.length}
+            currentPage={list.currentPage}
+            pageCount={list.pageCount}
+            onPageChange={list.setCurrentPage}
+            placeholder="Search trash by order or customer"
+          />
+        </div>
+        <div className="mt-4 overflow-x-auto border border-[var(--line)]">
           <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="bg-[var(--ivory)] text-xs uppercase tracking-wider">
               <tr>
@@ -89,7 +107,7 @@ export default function OrderTrash() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {list.visibleItems.map((order) => (
                 <tr key={order.id} className="border-t border-[var(--line)]">
                   <td className="p-4 font-semibold">{order.order_number}</td>
                   <td className="p-4"><div>{order.customer_name}</div><div className="text-xs text-[var(--muted)]">{order.customer_email}</div></td>
@@ -107,9 +125,13 @@ export default function OrderTrash() {
                   </td>
                 </tr>
               ))}
+              {!list.visibleItems.length && (
+                <tr><td colSpan={5} className="p-8 text-center text-sm text-[var(--muted)]">No trashed orders match your search.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
+        </>
       )}
     </AdminShell>
   );

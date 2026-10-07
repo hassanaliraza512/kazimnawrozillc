@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import AdminShell from "@/components/AdminShell";
+import {
+	AdminListControls,
+	useAdminList,
+} from "@/components/AdminListControls";
 
 type ChannelStatus = { emailConfigured: boolean; whatsappConfigured: boolean };
 type Subscriber = {
@@ -19,6 +23,16 @@ export default function Notifications() {
 	const [emailConfigured, setEmailConfigured] = useState(false);
 	const [subscriberError, setSubscriberError] = useState("");
 	const [approvingId, setApprovingId] = useState<number | null>(null);
+	const subscriberList = useAdminList(
+		subscribers,
+		(subscriber) =>
+			`${subscriber.email} ${subscriber.status} ${subscriber.created_at} ${subscriber.delivery_error}`,
+	);
+	const notificationList = useAdminList(
+		rows,
+		(row) =>
+			`${row.order_number} ${row.kind} ${row.recipient} ${row.provider} ${row.sent ? "sent" : "recorded"} ${row.error} ${row.created_at}`,
+	);
 
 	useEffect(() => {
 		fetch("/api/admin/notifications", { cache: "no-store" })
@@ -86,6 +100,17 @@ export default function Notifications() {
 					</p>
 				</div>
 				{subscriberError && <p role="alert" className="border-b border-[var(--line)] px-5 py-3 text-sm text-[var(--burgundy)]">{subscriberError}</p>}
+				<div className="p-5 pb-0">
+					<AdminListControls
+						search={subscriberList.search}
+						onSearchChange={subscriberList.setSearch}
+						totalCount={subscriberList.filteredItems.length}
+						currentPage={subscriberList.currentPage}
+						pageCount={subscriberList.pageCount}
+						onPageChange={subscriberList.setCurrentPage}
+						placeholder="Search mailing list by email or status"
+					/>
+				</div>
 				<div className="overflow-x-auto">
 					<table className="w-full min-w-[650px] text-left text-sm">
 						<thead className="bg-[var(--ivory)] text-xs uppercase tracking-wider">
@@ -97,7 +122,7 @@ export default function Notifications() {
 							</tr>
 						</thead>
 						<tbody>
-							{subscribers.map((subscriber) => (
+							{subscriberList.visibleItems.map((subscriber) => (
 								<tr key={subscriber.id} className="border-t border-[var(--line)]">
 									<td className="p-4 font-medium">{subscriber.email}</td>
 									<td className="p-4">{new Date(subscriber.created_at).toLocaleString()}</td>
@@ -119,12 +144,23 @@ export default function Notifications() {
 									</td>
 								</tr>
 							))}
-							{!subscribers.length && <tr><td colSpan={4} className="p-8 text-center text-[var(--muted)]">No subscription requests yet.</td></tr>}
+							{!subscriberList.visibleItems.length && <tr><td colSpan={4} className="p-8 text-center text-[var(--muted)]">{subscribers.length ? "No subscription requests match your search." : "No subscription requests yet."}</td></tr>}
 						</tbody>
 					</table>
 				</div>
 			</section>
-			<div className="mt-7 overflow-x-auto border border-[var(--line)]">
+			<div className="mt-7 mb-4">
+				<AdminListControls
+					search={notificationList.search}
+					onSearchChange={notificationList.setSearch}
+					totalCount={notificationList.filteredItems.length}
+					currentPage={notificationList.currentPage}
+					pageCount={notificationList.pageCount}
+					onPageChange={notificationList.setCurrentPage}
+					placeholder="Search notifications by order, recipient, channel, or status"
+				/>
+			</div>
+			<div className="overflow-x-auto border border-[var(--line)]">
 				<table className="w-full min-w-[900px] text-left text-sm">
 					<thead className="bg-[var(--ivory)] text-xs uppercase tracking-wider">
 						<tr>
@@ -133,7 +169,7 @@ export default function Notifications() {
 						</tr>
 					</thead>
 					<tbody>
-						{rows.map((row) => (
+						{notificationList.visibleItems.map((row) => (
 							<tr key={row.id} className="border-t border-[var(--line)]">
 								<td className="p-4 font-semibold">{row.order_number}</td>
 								<td className="p-4">{row.kind.replaceAll("_", " ")}</td>
@@ -143,7 +179,7 @@ export default function Notifications() {
 								<td className="p-4">{new Date(row.created_at).toLocaleString()}</td>
 							</tr>
 						))}
-						{!rows.length && <tr><td colSpan={6} className="p-8 text-center text-[var(--muted)]">No notifications recorded yet.</td></tr>}
+						{!notificationList.visibleItems.length && <tr><td colSpan={6} className="p-8 text-center text-[var(--muted)]">{rows.length ? "No notifications match your search." : "No notifications recorded yet."}</td></tr>}
 					</tbody>
 				</table>
 			</div>

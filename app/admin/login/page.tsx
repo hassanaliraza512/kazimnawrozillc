@@ -26,7 +26,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center bg-[var(--ivory)] px-6">
+    <main className="admin-login min-h-screen grid place-items-center bg-[var(--ivory)] px-6">
       <form onSubmit={submit} className="w-full max-w-md border border-[var(--line)] bg-white p-8 shadow-sm">
         <BrandLogo href="/" showName className="justify-center" imageClassName="h-28 md:h-28" />
         <h1 className="mt-3 text-center font-serif text-4xl">Admin sign in</h1>

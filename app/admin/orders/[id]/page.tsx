@@ -91,7 +91,7 @@ export default function OrderInvoice() {
 
   return (
     <AdminShell>
-      <div className="mx-auto max-w-4xl">
+      <div className="invoice-print-page mx-auto max-w-4xl">
         <div className="no-print flex justify-end">
           <button
             onClick={() => window.print()}

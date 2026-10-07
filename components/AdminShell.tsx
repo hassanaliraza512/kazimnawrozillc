@@ -1,6 +1,177 @@
 "use client";
-import Link from "next/link";import {useEffect,useState} from "react";import {usePathname} from "next/navigation";
-import {BarChart3,Boxes,LayoutDashboard,LogOut,Package,Settings,Store,Truck,FileText,ExternalLink,Users,Mails,Trash2} from "lucide-react";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  BarChart3,
+  Boxes,
+  ExternalLink,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Mails,
+  Package,
+  Settings,
+  Store,
+  Trash2,
+  Truck,
+  Users,
+} from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
-const items=[['/admin','Overview',LayoutDashboard,null],['/admin/products','Storefront',Store,'store'],['/admin/inventory','Inventory',Boxes,'inventory'],['/admin/orders','Orders',Package,'orders'],['/admin/trash','Trash',Trash2,'orders'],['/admin/analytics','Analytics',BarChart3,'analytics'],['/admin/settings','Settings',Settings,'settings'],['/admin/categories','Categories',Boxes,'categories'],['/admin/users','Admin Users',Users,'users'],['/admin/notifications','Notifications',Mails,'orders']] as const;
-export default function AdminShell({children}:{children:React.ReactNode}){const path=usePathname();const[session,setSession]=useState<any>(null);useEffect(()=>{fetch('/api/admin/me').then(r=>r.ok?r.json():null).then(setSession)},[]);useEffect(()=>{if(!session)return;const match=items.find(x=>path===x[0]||path.startsWith(x[0]+'/'));if(match&&match[3]&&session.role!=='admin'&&!session.permissions.includes(match[3])){const first=items.find(x=>!x[3]||session.permissions.includes(x[3]));window.location.href=first?.[0]||'/admin'}},[session,path]);async function logout(){await fetch('/api/admin/logout',{method:'POST'});window.location.href='/admin/login'}const allowed=(perm:any)=>!perm||session?.role==='admin'||session?.permissions?.includes(perm);useEffect(()=>{if(session&&path!='/admin'&&!items.some(x=>x[0]===path||path.startsWith(x[0]+'/')?allowed(x[3]):false)&&!['/shipping','/refund-policy','/privacy-policy','/terms'].includes(path)){}},[session,path]);return <div className="admin-shell min-h-screen bg-[var(--paper)]"><header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[rgba(255,253,248,.96)] backdrop-blur"><div className="mx-auto flex max-w-[1500px] items-center justify-between px-5 py-4"><div className="flex items-center gap-3"><BrandLogo href="/admin" compact className="shrink-0" /><span className="text-[9px] font-sans uppercase tracking-[.2em] text-[var(--muted)]">Admin</span></div><div className="flex items-center gap-3"><span className="hidden text-xs text-[var(--muted)] md:inline">{session?.username||''} · {session?.role==='admin'?'Full access':'Staff'}</span><Link href="/" className="hidden items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm md:inline-flex"><Truck size={15}/> View store</Link><button onClick={logout} className="inline-flex items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm"><LogOut size={15}/> Logout</button></div></div></header><div className="mx-auto grid max-w-[1500px] gap-6 px-5 py-6 lg:grid-cols-[230px_1fr]"><aside className="h-fit border border-[var(--line)] bg-[var(--ivory)] p-3 lg:sticky lg:top-24"><p className="px-3 py-3 text-[10px] uppercase tracking-[.25em] text-[var(--terracotta)]">Management</p><nav className="grid gap-1">{items.filter(x=>allowed(x[3])).map(([href,label,Icon])=>{const active=href==='/admin'?path==='/admin':path.startsWith(href);return <Link key={href} href={href} aria-current={active?'page':undefined} className={`admin-nav-link flex items-center gap-3 px-3 py-3 text-sm ${active?'admin-nav-active font-semibold':'hover:bg-white/70'}`}><Icon size={17}/>{label}</Link>})}</nav><div className="mt-5 border-t border-[var(--line)] pt-3"><>{allowed("delivery")&&<Link href="/shipping" className="flex items-center gap-3 px-3 py-3 text-sm hover:bg-white/70"><Truck size={17}/> Delivery methods</Link>}{allowed("policies")&&<Link href="/refund-policy" className="flex items-center gap-3 px-3 py-3 text-sm hover:bg-white/70"><FileText size={17}/> Store policies</Link>}</><Link href="/" className="flex items-center gap-3 px-3 py-3 text-sm hover:bg-white/70"><ExternalLink size={17}/> Public storefront</Link></div></aside><section className="min-w-0">{children}</section></div></div>}
+
+const items = [
+  ["/admin", "Overview", LayoutDashboard, null],
+  ["/admin/products", "Storefront", Store, "store"],
+  ["/admin/inventory", "Inventory", Boxes, "inventory"],
+  ["/admin/orders", "Orders", Package, "orders"],
+  ["/admin/trash", "Trash", Trash2, "orders"],
+  ["/admin/analytics", "Analytics", BarChart3, "analytics"],
+  ["/admin/settings", "Settings", Settings, "settings"],
+  ["/admin/categories", "Categories", Boxes, "categories"],
+  ["/admin/users", "Admin Users", Users, "users"],
+  ["/admin/notifications", "Notifications", Mails, "orders"],
+] as const;
+
+export default function AdminShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const path = usePathname();
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then(setSession);
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const match = items.find(
+      ([href]) => path === href || path.startsWith(`${href}/`),
+    );
+    if (
+      match &&
+      match[3] &&
+      session.role !== "admin" &&
+      !session.permissions.includes(match[3])
+    ) {
+      const first = items.find(
+        ([, , , permission]) =>
+          !permission || session.permissions.includes(permission),
+      );
+      window.location.href = first?.[0] || "/admin";
+    }
+  }, [session, path]);
+
+  async function logout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  }
+
+  const allowed = (permission: string | null) =>
+    !permission ||
+    session?.role === "admin" ||
+    session?.permissions?.includes(permission);
+  const current = items.find(
+    ([href]) => path === href || path.startsWith(`${href}/`),
+  );
+
+  return (
+    <div className="admin-shell min-h-screen">
+      <aside className="admin-sidebar">
+        <div className="admin-brand">
+          <BrandLogo
+            href="/admin"
+            compact
+            showName
+            className="admin-brand-link"
+            imageClassName="admin-brand-image"
+          />
+          <span className="admin-brand-label">STORE ADMIN</span>
+        </div>
+
+        <nav className="admin-navigation" aria-label="Store management">
+          <p className="admin-nav-heading">Workspace</p>
+          {items
+            .filter(([, , , permission]) => allowed(permission))
+            .map(([href, label, Icon]) => {
+              const active =
+                href === "/admin"
+                  ? path === "/admin"
+                  : path.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className="admin-nav-link"
+                >
+                  <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+
+          <p className="admin-nav-heading admin-nav-secondary-heading">
+            Store links
+          </p>
+          {allowed("delivery") && (
+            <Link href="/shipping" className="admin-nav-link">
+              <Truck size={18} strokeWidth={1.8} aria-hidden="true" />
+              <span>Delivery methods</span>
+            </Link>
+          )}
+          {allowed("policies") && (
+            <Link href="/refund-policy" className="admin-nav-link">
+              <FileText size={18} strokeWidth={1.8} aria-hidden="true" />
+              <span>Store policies</span>
+            </Link>
+          )}
+          <Link href="/" className="admin-nav-link">
+            <ExternalLink size={18} strokeWidth={1.8} aria-hidden="true" />
+            <span>Public storefront</span>
+          </Link>
+        </nav>
+
+        <div className="admin-account">
+          <span className="admin-account-avatar" aria-hidden="true">
+            {(session?.username || "A").slice(0, 1).toUpperCase()}
+          </span>
+          <span className="admin-account-details">
+            <strong>{session?.username || "Administrator"}</strong>
+            <span>
+              {session?.role === "admin" ? "Store administrator" : "Staff"}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={logout}
+            className="admin-logout"
+            aria-label="Log out"
+            title="Log out"
+          >
+            <LogOut size={17} aria-hidden="true" />
+          </button>
+        </div>
+      </aside>
+
+      <div className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <p className="admin-topbar-eyebrow">Kazim Nawrozi LLC</p>
+            <h1>{current?.[1] || "Store management"}</h1>
+          </div>
+          <Link href="/" className="admin-view-store">
+            <Store size={16} aria-hidden="true" />
+            <span>View store</span>
+            <ExternalLink size={14} aria-hidden="true" />
+          </Link>
+        </header>
+        <main className="admin-content">{children}</main>
+      </div>
+    </div>
+  );
+}

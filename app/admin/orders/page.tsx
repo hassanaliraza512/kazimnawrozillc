@@ -369,14 +369,14 @@ export default function Orders() {
       )}
       {selected && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 p-4"
+          className="invoice-print-page fixed inset-0 z-50 bg-black/40 p-4"
           onClick={() => setSelected(null)}
         >
           <div
-            className="mx-auto mt-4 max-h-[92vh] max-w-4xl overflow-y-auto bg-[var(--paper)] p-7"
+            className="invoice-article mx-auto mt-4 max-h-[92vh] max-w-4xl overflow-y-auto bg-[var(--paper)] p-7"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4">
+            <div className="invoice-header flex items-start justify-between gap-4">
               <div>
                 <BrandLogo href="/admin" compact className="mb-3" />
                 <p className="text-xs uppercase tracking-[.2em] text-[var(--terracotta)]">
@@ -387,7 +387,7 @@ export default function Orders() {
                   Created {new Date(selected.created_at).toLocaleString()}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="no-print flex gap-2">
                 <Link
                   href={`/admin/orders/${selected.id}`}
                   className="border px-3 py-2 text-sm"
@@ -463,7 +463,7 @@ export default function Orders() {
                 b={selected.delivery_method !== "local-pickup" && selected.advance_percent == null ? "Confirmed by email" : `$${getBalanceDue(Number(selected.subtotal), Number(selected.delivery_fee || 0)).toLocaleString()}`}
               />
             </div>
-            <section className="mt-8 border border-[var(--line)] bg-white p-5">
+            <section className="no-print mt-8 border border-[var(--line)] bg-white p-5">
               <h3 className="font-serif text-xl">Payment &amp; delivery instructions</h3>
               <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
                 Choose the advance and delivery estimate for this order. Saving emails the customer with these terms and the store bank details.
@@ -556,7 +556,7 @@ export default function Orders() {
                 </strong>
               </p>
             </div>
-            <div className="mt-8">
+            <div className="no-print mt-8">
               <h3 className="font-serif text-xl">Internal notes</h3>
               <textarea
                 value={notes}
